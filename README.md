@@ -1,6 +1,7 @@
 # 🧠 NeuroMaze
 
-**NeuroMaze** é um jogo interativo baseado em labirintos e conhecimento. O jogador precisa responder perguntas corretamente para desbloquear caminhos e avançar no cenário. Respostas erradas geram penalidades, tornando a jornada mais desafiadora. O jogo possui estilo visual minimalista em 2D, com ambientação em uma floresta e opção de câmera em primeira e terceira pessoa.
+
+**NeuroMaze** é um jogo de perguntas e respostas
 
 ## 🚀 Tecnologias Utilizadas
 

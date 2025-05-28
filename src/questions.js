@@ -2106,7 +2106,7 @@ const questions = {
       answer: 'Realismo',
     },
   ],
-  Entretinemento: [
+  Entretenimento: [
     {
       question: 'Qual filme ganhou o Oscar de Melhor Filme em 2020?',
       options: ['1917', 'Parasita', 'Coringa', 'Ford vs Ferrari'],
@@ -2340,7 +2340,7 @@ const questions = {
       options: [
         'The 100',
         'The Walking Dead',
-        'The Walking Dead',
+        'Game of Thrones',
         'Fear the Walking Dead',
       ],
       answer: 'The Walking Dead',

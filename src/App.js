@@ -103,7 +103,7 @@ function App() {
   return (
     <div className="quiz-container">
       <img
-        src={require('./img/fundo-de-floresta-de-desenhos-animados.jpg')}
+        src={require('./img/fundo.png')}
         alt="FundoFloresta"
       />
       {!selectedTopic ? (

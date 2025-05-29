@@ -2315,7 +2315,7 @@ const questions = {
     },
     {
       question: 'Qual banda britânica lançou a música “Yellow”?',
-      options: ['Oasis', 'Coldplay', 'Coldplay', 'Radiohead'],
+      options: ['Oasis', 'Coldplay', 'Justin Bieber', 'Radiohead'],
       answer: 'Coldplay',
     },
     {

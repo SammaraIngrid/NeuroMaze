@@ -17,16 +17,41 @@ const shuffleArray = (array) => {
 };
 
 function App() {
+  const [userName, setUserName] = useState('');
+  const [showNameInput, setShowNameInput] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [shuffledQuestions, setShuffledQuestions] = useState([]);
   const [timeLeft, setTimeLeft] = useState(15);
+  const [ranking, setRanking] = useState([]);
+  const [quizStartTime, setQuizStartTime] = useState(null);
+  const [quizEndTime, setQuizEndTime] = useState(null);
+  const [timerActive, setTimerActive] = useState(false); // New state to control timer activity
+
+  useEffect(() => {
+    const savedRanking = JSON.parse(localStorage.getItem('quizRanking')) || [];
+    setRanking(savedRanking);
+  }, []);
 
   const playSound = (sound) => {
     const audio = new Audio(sound);
     audio.play();
+  };
+
+  const handleNameSubmit = (e) => {
+    e.preventDefault();
+    if (userName.trim()) {
+      playSound(clickSound);
+      setShowNameInput(false);
+    }
+  };
+
+  // Helper function to start the timer for a new question
+  const startNewQuestionTimer = () => {
+    setTimeLeft(15);
+    setTimerActive(true);
   };
 
   const handleTopicSelection = (topic) => {
@@ -37,7 +62,9 @@ function App() {
     setCurrentQuestion(0);
     setScore(0);
     setShowResult(false);
-    setTimeLeft(15);
+    setQuizStartTime(Date.now());
+    setQuizEndTime(null);
+    startNewQuestionTimer(); // Start timer for the first question
   };
 
   const handleAnswer = (option) => {
@@ -57,11 +84,34 @@ function App() {
     const next = currentQuestion + 1;
     if (next < shuffledQuestions.length) {
       setCurrentQuestion(next);
-      setTimeLeft(15);
+      startNewQuestionTimer(); // Start timer for the next question
     } else {
+      setTimerActive(false); // Stop timer when quiz ends
+      setQuizEndTime(Date.now());
       setShowResult(true);
       playSound(resultSound);
     }
+  };
+
+  useEffect(() => {
+    if (showResult && quizEndTime && quizStartTime) {
+      updateRanking();
+    }
+  }, [showResult, quizEndTime, quizStartTime]);
+
+  const updateRanking = () => {
+    const timeTaken = ((quizEndTime - quizStartTime) / 1000).toFixed(1);
+    const newEntry = { name: userName, score: score, topic: selectedTopic, time: parseFloat(timeTaken) };
+
+    const updatedRanking = [...ranking, newEntry].sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return a.time - b.time;
+    });
+
+    localStorage.setItem('quizRanking', JSON.stringify(updatedRanking));
+    setRanking(updatedRanking);
   };
 
   const restartQuiz = () => {
@@ -71,7 +121,9 @@ function App() {
     setCurrentQuestion(0);
     setScore(0);
     setShowResult(false);
-    setTimeLeft(15);
+    setQuizStartTime(Date.now());
+    setQuizEndTime(null);
+    startNewQuestionTimer(); // Restart timer for the new attempt
   };
 
   const goBackToMenu = () => {
@@ -81,24 +133,45 @@ function App() {
     setShowResult(false);
     setScore(0);
     setShuffledQuestions([]);
-    setTimeLeft(15);
+    setTimeLeft(15); // Reset timeLeft, but timer won't start until a topic is selected
+    setUserName('');
+    setShowNameInput(true);
+    setQuizStartTime(null);
+    setQuizEndTime(null);
+    setTimerActive(false); // Ensure timer is off when going back to menu
   };
 
+  // Timer logic
   useEffect(() => {
-    if (showResult || !selectedTopic) return;
-
-    if (timeLeft === 0) {
-      playSound(wrongSound);
-      nextQuestion();
+    // If timer is not active, or quiz results are showing, do nothing
+    if (!timerActive || showResult) {
       return;
     }
 
+    // If time runs out for the current question
+    if (timeLeft === 0) {
+      playSound(wrongSound);
+      nextQuestion(); // Move to the next question
+      return; // Do not set a new interval if time is 0
+    }
+
+    // Start countdown
     const timer = setInterval(() => {
       setTimeLeft((prev) => prev - 1);
     }, 1000);
 
+    // Cleanup function: clear the interval when component unmounts or dependencies change
     return () => clearInterval(timer);
-  }, [timeLeft, showResult, selectedTopic]);
+  }, [timeLeft, timerActive, showResult, currentQuestion, shuffledQuestions.length]); // Dependencies for the timer effect
+
+  const getRankText = (index) => {
+    switch (index) {
+      case 0: return '1º Lugar 🥇';
+      case 1: return '2º Lugar 🥈';
+      case 2: return '3º Lugar 🥉';
+      default: return `${index + 1}º Lugar`;
+    }
+  };
 
   return (
     <div className="quiz-container">
@@ -106,9 +179,28 @@ function App() {
         src={require('./img/fundo.png')}
         alt="FundoFloresta"
       />
-      {!selectedTopic ? (
+
+      {showNameInput ? (
         <div className="start-menu">
           <h1>Bem-vindo ao NeuroMaze!</h1>
+          <form onSubmit={handleNameSubmit}>
+            <h2>Por favor, digite seu nome:</h2>
+            <input
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="Seu nome"
+              required
+              className="name-input"
+            />
+            <button type="submit" className="start-button">
+              Começar
+            </button>
+          </form>
+        </div>
+      ) : !selectedTopic ? (
+        <div className="start-menu">
+          <h1>Olá, {userName}!</h1>
           <h2>Escolha um tema:</h2>
           <div className="topic-buttons">
             {Object.keys(questions).map((topic) => (
@@ -135,8 +227,25 @@ function App() {
             {showResult ? (
               <div>
                 <p className="result">
-                  Você acertou {score} de {shuffledQuestions.length} perguntas!
+                  Parabéns, {userName}! Você acertou {score} de {shuffledQuestions.length} perguntas em {((quizEndTime - quizStartTime) / 1000).toFixed(1)} segundos!
                 </p>
+                <h3>Ranking Geral:</h3>
+                <ol className="ranking-list">
+                  {ranking.map((entry, index) => (
+                    <li key={index} className={
+                        entry.name === userName &&
+                        entry.score === score &&
+                        entry.topic === selectedTopic &&
+                        entry.time === parseFloat(((quizEndTime - quizStartTime) / 1000).toFixed(1))
+                        ? 'highlight-me' : ''
+                    }>
+                      <span className="ranking-position">{getRankText(index)}</span>
+                      <span className="ranking-info">
+                        {entry.name} - {entry.score} acertos ({entry.topic}) <br/> ⏰ {entry.time}s
+                      </span>
+                    </li>
+                  ))}
+                </ol>
                 <button className="restart-button" onClick={restartQuiz}>
                   Tentar novamente
                 </button>
